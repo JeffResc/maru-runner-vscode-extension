@@ -27,7 +27,7 @@ jobs:
     
     - name: Login to VSCode Marketplace
       run: |
-        echo ${{ secrets.PUBLISH_TOKEN }} | vsce login jeffresc --pat
+        echo ${{ secrets.PUBLISH_TOKEN }} | vsce login jeffresc
       
     - name: Package extension
       run: vsce package
