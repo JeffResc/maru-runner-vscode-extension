@@ -1,4 +1,4 @@
-# Maru Runner Tasks Extension
+# Maru Runner Tasks VSCode Extension
 
 A Visual Studio Code extension that automatically detects [Maru Runner](https://github.com/defenseunicorns/maru-runner) task files and makes them available as native VSCode tasks.
 
@@ -6,6 +6,7 @@ A Visual Studio Code extension that automatically detects [Maru Runner](https://
 
 - **Schema-based Detection**: Automatically detects any YAML file that matches the Maru Runner schema
 - **Native Integration**: Converts Maru tasks into VSCode tasks that can be run from the Command Palette or Tasks view
+- **CodeLens Integration**: Adds "Run" buttons directly in YAML files next to each task definition
 - **Real-time Updates**: Watches for changes in task files and automatically refreshes the task list
 - **Configurable**: Customize the Maru runner executable path and schema version
 - **Full Maru Support**: Supports all Maru Runner features including:
@@ -16,6 +17,14 @@ A Visual Studio Code extension that automatically detects [Maru Runner](https://
   - Task inputs
 
 ## Installation
+
+1. Download the latest `.vsix` file from [GitHub Releases](https://github.com/JeffResc/maru-runner-vscode-extension/releases)
+2. In VSCode, go to Extensions tab (Ctrl+Shift+X)
+3. Click the "..." menu in the Extensions view
+4. Select "Install from VSIX..."
+5. Choose the downloaded `.vsix` file
+
+## Development Installation
 
 1. Clone or download this extension
 2. Open the extension folder in VSCode
@@ -37,9 +46,10 @@ Once installed, the extension will automatically:
 
 You can run Maru tasks in several ways:
 
-1. **Command Palette**: `Ctrl+Shift+P` → "Tasks: Run Task" → Select your Maru task
-2. **Task Terminal**: `Ctrl+Shift+P` → "Tasks: Run Task" → Select "maru: your-task-name"
-3. **Keyboard Shortcut**: Assign shortcuts to specific tasks via VSCode's keyboard shortcuts settings
+1. **CodeLens (Recommended)**: Click the "▶️ Run [task-name]" button that appears next to each task definition in YAML files
+2. **Command Palette**: `Ctrl+Shift+P` → "Tasks: Run Task" → Select your Maru task
+3. **Task Terminal**: `Ctrl+Shift+P` → "Tasks: Run Task" → Select "maru: your-task-name"
+4. **Keyboard Shortcut**: Assign shortcuts to specific tasks via VSCode's keyboard shortcuts settings
 
 ### Task Files
 
@@ -80,23 +90,13 @@ The extension can be configured through VSCode settings:
 
 ### `maru-runner.executable`
 - **Type**: `string`
-- **Default**: `"run"`
-- **Description**: Path to the maru runner executable
-
-### `maru-runner.udsCompatible`
-- **Type**: `boolean`
-- **Default**: `false`
-- **Description**: Use 'uds run' command instead of 'run' for UDS compatibility
+- **Default**: Auto-detected (tries 'uds run' first, then 'run')
+- **Description**: Path to the maru runner executable. If not specified, will try 'uds run' first, then fallback to 'run'
 
 ### `maru-runner.autoDetect`
 - **Type**: `boolean`
 - **Default**: `true`
 - **Description**: Automatically detect and create tasks from tasks.yaml files
-
-### `maru-runner.taskFiles`
-- **Type**: `array`
-- **Default**: `["tasks.yaml", "tasks.yml"]`
-- **Description**: Filenames to search for Maru task definitions (deprecated - now uses schema validation)
 
 ### `maru-runner.schemaVersion`
 - **Type**: `string`
@@ -106,21 +106,19 @@ The extension can be configured through VSCode settings:
 Example settings.json:
 ```json
 {
-  "maru-runner.executable": "run",
   "maru-runner.autoDetect": true,
   "maru-runner.schemaVersion": "main"
 }
 ```
 
-For UDS users, or to use a specific schema version:
+To use a specific schema version:
 ```json
 {
-  "maru-runner.executable": "uds run",
   "maru-runner.schemaVersion": "v0.1.0"
 }
 ```
 
-Or manually set the executable for custom paths:
+To manually set the executable (overrides auto-detection):
 ```json
 {
   "maru-runner.executable": "/usr/local/bin/uds run"
@@ -131,6 +129,9 @@ Or manually set the executable for custom paths:
 
 ### `maru-runner.refreshTasks`
 Manually refresh the task list to pick up changes in task files.
+
+### `maru-runner.runTaskFromFile`
+Run a specific task from a task file. This command is used internally by the CodeLens feature to run tasks directly from YAML files.
 
 ## Supported Maru Features
 
@@ -150,7 +151,7 @@ The extension supports all major Maru Runner features:
 
 - Visual Studio Code 1.102.0 or higher
 - Maru Runner installed and available in your PATH, or UDS CLI with Maru Runner support
-- Configure `maru-runner.udsCompatible: true` if using UDS CLI
+- The extension will automatically detect whether to use 'uds run' or 'run' command
 
 ## Known Issues
 
@@ -171,4 +172,4 @@ This extension is released under the MIT License.
 
 ## Support
 
-For issues and feature requests, please visit the [GitHub repository](https://github.com/your-repo/maru-runner-vscode).
+For issues and feature requests, please visit the [GitHub repository](https://github.com/JeffResc/maru-runner-vscode-extension).
