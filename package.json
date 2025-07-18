@@ -72,13 +72,7 @@
       "properties": {
         "maru-runner.executable": {
           "type": "string",
-          "default": "run",
-          "description": "Path to the maru runner executable"
-        },
-        "maru-runner.udsCompatible": {
-          "type": "boolean",
-          "default": false,
-          "description": "Use 'uds run' command instead of 'run' for UDS compatibility"
+          "description": "Path to the maru runner executable. If not specified, will try 'uds run' first, then fallback to 'run'"
         },
         "maru-runner.autoDetect": {
           "type": "boolean",

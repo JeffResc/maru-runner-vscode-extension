@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { MaruTask, MaruTaskFile, MaruTaskDefinition } from './types';
 import { findTaskFiles, parseTaskFile } from './extension';
+
+const execAsync = promisify(exec);
 
 export class MaruTaskProvider implements vscode.TaskProvider {
     private _onDidChangeTreeData: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
@@ -9,12 +13,55 @@ export class MaruTaskProvider implements vscode.TaskProvider {
 
     private taskFiles: MaruTaskFile[] = [];
     private tasks: vscode.Task[] = [];
+    private cachedExecutable: string | null = null;
 
     constructor() {
         this.refresh();
     }
 
+    private async checkCommandExists(command: string): Promise<boolean> {
+        try {
+            const checkCommand = process.platform === 'win32' ? `where ${command}` : `which ${command}`;
+            await execAsync(checkCommand);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    private async determineExecutable(): Promise<string> {
+        if (this.cachedExecutable) {
+            return this.cachedExecutable;
+        }
+
+        const config = vscode.workspace.getConfiguration('maru-runner');
+        const configuredExecutable = config.get<string>('executable');
+        
+        if (configuredExecutable) {
+            this.cachedExecutable = configuredExecutable;
+            return configuredExecutable;
+        }
+
+        // Try 'uds run' first, then fallback to 'run'
+        const udsExists = await this.checkCommandExists('uds');
+        if (udsExists) {
+            this.cachedExecutable = 'uds run';
+            return 'uds run';
+        }
+
+        const runExists = await this.checkCommandExists('run');
+        if (runExists) {
+            this.cachedExecutable = 'run';
+            return 'run';
+        }
+
+        // Default to 'run' if neither is found (let the user see the error)
+        this.cachedExecutable = 'run';
+        return 'run';
+    }
+
     public refresh(): void {
+        this.cachedExecutable = null; // Clear cache on refresh
         this._onDidChangeTreeData.fire();
         this.loadTasks();
     }
@@ -68,12 +115,12 @@ export class MaruTaskProvider implements vscode.TaskProvider {
     }
 
     public async createVSCodeTask(maruTask: MaruTask, filePath?: string): Promise<vscode.Task | null> {
-        const config = vscode.workspace.getConfiguration('maru-runner');
-        const executable = config.get<string>('executable', 'run');
-        const udsCompatible = config.get<boolean>('udsCompatible', false);
+        const finalExecutable = await this.determineExecutable();
         
-        // Use uds run if udsCompatible is enabled and executable is still default
-        const finalExecutable = udsCompatible && executable === 'run' ? 'uds run' : executable;
+        const workspaceFolder = this.getWorkspaceFolder(filePath);
+        if (!workspaceFolder) {
+            return null;
+        }
         
         const args = [maruTask.name];
         
@@ -87,11 +134,6 @@ export class MaruTaskProvider implements vscode.TaskProvider {
             file: filePath,
             args: []
         };
-        
-        const workspaceFolder = this.getWorkspaceFolder(filePath);
-        if (!workspaceFolder) {
-            return null;
-        }
         
         // Split executable in case it contains spaces (like "uds run")
         const executableParts = finalExecutable.split(' ');
@@ -122,12 +164,7 @@ export class MaruTaskProvider implements vscode.TaskProvider {
     }
 
     private async createVSCodeTaskFromDefinition(definition: MaruTaskDefinition): Promise<vscode.Task> {
-        const config = vscode.workspace.getConfiguration('maru-runner');
-        const executable = config.get<string>('executable', 'run');
-        const udsCompatible = config.get<boolean>('udsCompatible', false);
-        
-        // Use uds run if udsCompatible is enabled and executable is still default
-        const finalExecutable = udsCompatible && executable === 'run' ? 'uds run' : executable;
+        const finalExecutable = await this.determineExecutable();
         
         const args = [definition.task];
         

@@ -27,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     const runTaskCommand = vscode.commands.registerCommand('maru-runner.runTask', async (task: MaruTask) => {
-        const vsCodeTask = await taskProvider.createVSCodeTask(task);
+        const vsCodeTask = await taskProvider.createVSCodeTask(task, (task as any).file);
         if (vsCodeTask) {
             vscode.tasks.executeTask(vsCodeTask);
         }
@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
                     ...task,
                     file: filePath
                 };
-                const vsCodeTask = await taskProvider.createVSCodeTask(maruTask);
+                const vsCodeTask = await taskProvider.createVSCodeTask(maruTask, filePath);
                 if (vsCodeTask) {
                     vscode.tasks.executeTask(vsCodeTask);
                 }
