@@ -12,7 +12,10 @@ export class MaruCodeLensProvider implements vscode.CodeLensProvider {
 
     public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
         const fileName = document.fileName.toLowerCase();
-        if (!fileName.endsWith('tasks.yaml') && !fileName.endsWith('tasks.yml')) {
+        const isTasksFile = fileName.endsWith('tasks.yaml') || fileName.endsWith('tasks.yml');
+        const isInTasksDir = fileName.includes('/tasks/') && (fileName.endsWith('.yaml') || fileName.endsWith('.yml'));
+        
+        if (!isTasksFile && !isInTasksDir) {
             return [];
         }
 

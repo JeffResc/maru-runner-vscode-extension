@@ -27,14 +27,6 @@
         "command": "maru-runner.refreshTasks",
         "title": "Refresh Maru Tasks",
         "icon": "$(refresh)"
-      },
-      {
-        "command": "maru-runner.runTask",
-        "title": "Run Maru Task"
-      },
-      {
-        "command": "maru-runner.runTaskFromFile",
-        "title": "Run Maru Task from File"
       }
     ],
     "menus": {

@@ -16,7 +16,10 @@ export function activate(context: vscode.ExtensionContext) {
     // Register code lens provider
     const codeLensProvider = new MaruCodeLensProvider();
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
-        { pattern: '**/tasks.{yaml,yml}' },
+        [
+            { pattern: '**/tasks.{yaml,yml}' },
+            { pattern: '**/tasks/*.{yaml,yml}' }
+        ],
         codeLensProvider
     );
 
@@ -26,44 +29,23 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage('Maru tasks refreshed');
     });
 
-    const runTaskCommand = vscode.commands.registerCommand('maru-runner.runTask', async (task: MaruTask) => {
-        const vsCodeTask = await taskProvider.createVSCodeTask(task, (task as any).file);
-        if (vsCodeTask) {
-            vscode.tasks.executeTask(vsCodeTask);
-        }
-    });
-
-    const runTaskFromFileCommand = vscode.commands.registerCommand('maru-runner.runTaskFromFile', async (taskName: string, filePath: string) => {
-        const taskFile = await parseTaskFile(filePath);
-        if (taskFile) {
-            const task = taskFile.tasks.find(t => t.name === taskName);
-            if (task) {
-                const maruTask: MaruTask = {
-                    ...task,
-                    file: filePath
-                };
-                const vsCodeTask = await taskProvider.createVSCodeTask(maruTask, filePath);
-                if (vsCodeTask) {
-                    vscode.tasks.executeTask(vsCodeTask);
-                }
-            }
-        }
-    });
 
     // Watch for changes in task files
-    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/tasks.{yaml,yml}');
-    fileWatcher.onDidChange(() => {
+    const taskFileWatcher = vscode.workspace.createFileSystemWatcher('**/tasks.{yaml,yml}');
+    const tasksDirWatcher = vscode.workspace.createFileSystemWatcher('**/tasks/*.{yaml,yml}');
+    
+    const refreshBoth = () => {
         taskProvider.refresh();
         codeLensProvider.refresh();
-    });
-    fileWatcher.onDidCreate(() => {
-        taskProvider.refresh();
-        codeLensProvider.refresh();
-    });
-    fileWatcher.onDidDelete(() => {
-        taskProvider.refresh();
-        codeLensProvider.refresh();
-    });
+    };
+    
+    taskFileWatcher.onDidChange(refreshBoth);
+    taskFileWatcher.onDidCreate(refreshBoth);
+    taskFileWatcher.onDidDelete(refreshBoth);
+    
+    tasksDirWatcher.onDidChange(refreshBoth);
+    tasksDirWatcher.onDidCreate(refreshBoth);
+    tasksDirWatcher.onDidDelete(refreshBoth);
 
     // Auto-detect tasks on startup
     if (vscode.workspace.workspaceFolders) {
@@ -74,9 +56,8 @@ export function activate(context: vscode.ExtensionContext) {
         taskProviderDisposable,
         codeLensProviderDisposable,
         refreshCommand,
-        runTaskCommand,
-        runTaskFromFileCommand,
-        fileWatcher
+        taskFileWatcher,
+        tasksDirWatcher
     );
 }
 
@@ -90,11 +71,17 @@ export async function findTaskFiles(): Promise<string[]> {
     
     if (vscode.workspace.workspaceFolders) {
         for (const folder of vscode.workspace.workspaceFolders) {
+            // Search for specific task files
             for (const filename of taskFiles) {
                 const pattern = new vscode.RelativePattern(folder, `**/${filename}`);
                 const files = await vscode.workspace.findFiles(pattern);
                 foundFiles.push(...files.map(f => f.fsPath));
             }
+            
+            // Search for any .yaml/.yml files in 'tasks' directories
+            const tasksPattern = new vscode.RelativePattern(folder, '**/tasks/*.{yaml,yml}');
+            const tasksFiles = await vscode.workspace.findFiles(tasksPattern);
+            foundFiles.push(...tasksFiles.map(f => f.fsPath));
         }
     }
     
