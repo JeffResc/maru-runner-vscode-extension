@@ -148,7 +148,7 @@ The extension supports all major Maru Runner features:
 
 ## Requirements
 
-- Visual Studio Code 1.74.0 or higher
+- Visual Studio Code 1.102.0 or higher
 - Maru Runner installed and available in your PATH, or UDS CLI with Maru Runner support
 - Configure `maru-runner.udsCompatible: true` if using UDS CLI
 

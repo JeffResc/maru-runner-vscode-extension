@@ -4,7 +4,7 @@
   "description": "Detect and run Maru Runner tasks as native VSCode tasks",
   "version": "1.0.0",
   "engines": {
-    "vscode": "^1.82.0"
+    "vscode": "^1.102.0"
   },
   "categories": [
     "Other"
@@ -95,7 +95,7 @@
   },
   "devDependencies": {
     "@types/vscode": "^1.102.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.0.14",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
     "eslint": "^9.31.0",
