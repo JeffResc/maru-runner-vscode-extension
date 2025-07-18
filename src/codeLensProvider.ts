@@ -30,7 +30,9 @@ export class MaruCodeLensProvider implements vscode.CodeLensProvider {
             let currentLine = 0;
             
             for (const task of parsed.tasks) {
-                if (!task.name) continue;
+                if (!task.name) {
+                    continue;
+                }
                 
                 const taskNameLine = this.findTaskNameLine(lines, task.name, currentLine);
                 if (taskNameLine >= 0) {
