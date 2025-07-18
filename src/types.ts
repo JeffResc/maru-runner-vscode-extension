@@ -46,6 +46,7 @@ export interface MaruTask {
     inputs?: Record<string, MaruTaskInput>;
     envPath?: string;
     wait?: MaruWait;
+    file?: string;
 }
 
 export interface MaruInclude {

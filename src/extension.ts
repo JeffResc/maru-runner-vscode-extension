@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'yaml';
 import { MaruTaskProvider } from './taskProvider';
+import { MaruCodeLensProvider } from './codeLensProvider';
 import { MaruTask, MaruTaskFile } from './types';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -11,6 +12,13 @@ export function activate(context: vscode.ExtensionContext) {
     // Register task provider
     const taskProvider = new MaruTaskProvider();
     const taskProviderDisposable = vscode.tasks.registerTaskProvider('maru', taskProvider);
+
+    // Register code lens provider
+    const codeLensProvider = new MaruCodeLensProvider();
+    const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
+        { pattern: '**/tasks.{yaml,yml}' },
+        codeLensProvider
+    );
 
     // Register commands
     const refreshCommand = vscode.commands.registerCommand('maru-runner.refreshTasks', () => {
@@ -25,11 +33,37 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    const runTaskFromFileCommand = vscode.commands.registerCommand('maru-runner.runTaskFromFile', async (taskName: string, filePath: string) => {
+        const taskFile = await parseTaskFile(filePath);
+        if (taskFile) {
+            const task = taskFile.tasks.find(t => t.name === taskName);
+            if (task) {
+                const maruTask: MaruTask = {
+                    ...task,
+                    file: filePath
+                };
+                const vsCodeTask = await taskProvider.createVSCodeTask(maruTask);
+                if (vsCodeTask) {
+                    vscode.tasks.executeTask(vsCodeTask);
+                }
+            }
+        }
+    });
+
     // Watch for changes in task files
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/tasks.{yaml,yml}');
-    fileWatcher.onDidChange(() => taskProvider.refresh());
-    fileWatcher.onDidCreate(() => taskProvider.refresh());
-    fileWatcher.onDidDelete(() => taskProvider.refresh());
+    fileWatcher.onDidChange(() => {
+        taskProvider.refresh();
+        codeLensProvider.refresh();
+    });
+    fileWatcher.onDidCreate(() => {
+        taskProvider.refresh();
+        codeLensProvider.refresh();
+    });
+    fileWatcher.onDidDelete(() => {
+        taskProvider.refresh();
+        codeLensProvider.refresh();
+    });
 
     // Auto-detect tasks on startup
     if (vscode.workspace.workspaceFolders) {
@@ -38,8 +72,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         taskProviderDisposable,
+        codeLensProviderDisposable,
         refreshCommand,
         runTaskCommand,
+        runTaskFromFileCommand,
         fileWatcher
     );
 }
