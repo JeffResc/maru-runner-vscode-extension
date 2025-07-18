@@ -1,5 +1,6 @@
 {
   "name": "maru-runner-tasks",
+  "publisher": "jeffresc",
   "displayName": "Maru Runner Tasks",
   "description": "Detect and run Maru Runner tasks as native VSCode tasks",
   "version": "1.0.0",

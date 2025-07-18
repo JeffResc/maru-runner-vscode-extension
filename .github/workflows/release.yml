@@ -24,15 +24,10 @@ jobs:
     
     - name: Install vsce
       run: npm install -g @vscode/vsce
-    
-    - name: Login to VSCode Marketplace
-      run: |
-        vsce login jeffresc -p ${{ secrets.PUBLISH_TOKEN }} 
-      
+
     - name: Package extension
       run: vsce package
 
-    - name: Publish extension
+    - name: Publish extension 
       run: |
-        VERSION=${GITHUB_REF#refs/tags/}
-        vsce publish $VERSION
+        vsce publish ${GITHUB_REF#refs/tags/} -p ${{ secrets.PUBLISH_TOKEN }} 
