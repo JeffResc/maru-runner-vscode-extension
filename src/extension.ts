@@ -5,6 +5,7 @@ import * as yaml from 'yaml';
 import { MaruTaskProvider } from './taskProvider';
 import { MaruCodeLensProvider } from './codeLensProvider';
 import { MaruTask, MaruTaskFile } from './types';
+import { SchemaValidator } from './schemaValidator';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Maru Runner extension is now active!');
@@ -13,12 +14,11 @@ export function activate(context: vscode.ExtensionContext) {
     const taskProvider = new MaruTaskProvider();
     const taskProviderDisposable = vscode.tasks.registerTaskProvider('maru', taskProvider);
 
-    // Register code lens provider
+    // Register code lens provider for all YAML files
     const codeLensProvider = new MaruCodeLensProvider();
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
         [
-            { pattern: '**/tasks.{yaml,yml}' },
-            { pattern: '**/tasks/*.{yaml,yml}' }
+            { pattern: '**/*.{yaml,yml}' }
         ],
         codeLensProvider
     );
@@ -29,23 +29,36 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage('Maru tasks refreshed');
     });
 
+    const runTaskFromFileCommand = vscode.commands.registerCommand('maru-runner.runTaskFromFile', 
+        async (taskName: string, filePath: string) => {
+            const executable = await taskProvider.determineExecutable();
+            const args = [taskName, '-f', filePath];
+            const executableParts = executable.split(' ');
+            const command = executableParts[0];
+            const baseArgs = executableParts.slice(1);
+            
+            const terminal = vscode.window.createTerminal({
+                name: `Maru: ${taskName}`,
+                cwd: vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))?.uri.fsPath
+            });
+            
+            terminal.sendText(`${command} ${[...baseArgs, ...args].join(' ')}`);
+            terminal.show();
+        }
+    );
 
-    // Watch for changes in task files
-    const taskFileWatcher = vscode.workspace.createFileSystemWatcher('**/tasks.{yaml,yml}');
-    const tasksDirWatcher = vscode.workspace.createFileSystemWatcher('**/tasks/*.{yaml,yml}');
+
+    // Watch for changes in all YAML files
+    const yamlFileWatcher = vscode.workspace.createFileSystemWatcher('**/*.{yaml,yml}');
     
     const refreshBoth = () => {
         taskProvider.refresh();
         codeLensProvider.refresh();
     };
     
-    taskFileWatcher.onDidChange(refreshBoth);
-    taskFileWatcher.onDidCreate(refreshBoth);
-    taskFileWatcher.onDidDelete(refreshBoth);
-    
-    tasksDirWatcher.onDidChange(refreshBoth);
-    tasksDirWatcher.onDidCreate(refreshBoth);
-    tasksDirWatcher.onDidDelete(refreshBoth);
+    yamlFileWatcher.onDidChange(refreshBoth);
+    yamlFileWatcher.onDidCreate(refreshBoth);
+    yamlFileWatcher.onDidDelete(refreshBoth);
 
     // Auto-detect tasks on startup
     if (vscode.workspace.workspaceFolders) {
@@ -56,32 +69,37 @@ export function activate(context: vscode.ExtensionContext) {
         taskProviderDisposable,
         codeLensProviderDisposable,
         refreshCommand,
-        taskFileWatcher,
-        tasksDirWatcher
+        runTaskFromFileCommand,
+        yamlFileWatcher
     );
 }
 
 export function deactivate() {}
 
 export async function findTaskFiles(): Promise<string[]> {
-    const config = vscode.workspace.getConfiguration('maru-runner');
-    const taskFiles = config.get<string[]>('taskFiles', ['tasks.yaml', 'tasks.yml']);
-    
     const foundFiles: string[] = [];
+    const validator = SchemaValidator.getInstance();
     
     if (vscode.workspace.workspaceFolders) {
         for (const folder of vscode.workspace.workspaceFolders) {
-            // Search for specific task files
-            for (const filename of taskFiles) {
-                const pattern = new vscode.RelativePattern(folder, `**/${filename}`);
-                const files = await vscode.workspace.findFiles(pattern);
-                foundFiles.push(...files.map(f => f.fsPath));
-            }
+            // Search for all YAML files in the workspace
+            const yamlPattern = new vscode.RelativePattern(folder, '**/*.{yaml,yml}');
+            const yamlFiles = await vscode.workspace.findFiles(yamlPattern);
             
-            // Search for any .yaml/.yml files in 'tasks' directories
-            const tasksPattern = new vscode.RelativePattern(folder, '**/tasks/*.{yaml,yml}');
-            const tasksFiles = await vscode.workspace.findFiles(tasksPattern);
-            foundFiles.push(...tasksFiles.map(f => f.fsPath));
+            for (const file of yamlFiles) {
+                try {
+                    const content = fs.readFileSync(file.fsPath, 'utf8');
+                    const parsed = yaml.parse(content);
+                    
+                    // Validate against maru-runner schema
+                    if (await validator.validateTaskFile(parsed)) {
+                        foundFiles.push(file.fsPath);
+                    }
+                } catch (error) {
+                    // Skip files that can't be parsed or validated
+                    continue;
+                }
+            }
         }
     }
     
@@ -93,7 +111,9 @@ export async function parseTaskFile(filePath: string): Promise<MaruTaskFile | nu
         const content = fs.readFileSync(filePath, 'utf8');
         const parsed = yaml.parse(content);
         
-        if (!parsed || !parsed.tasks || !Array.isArray(parsed.tasks)) {
+        // Validate against maru-runner schema
+        const validator = SchemaValidator.getInstance();
+        if (!(await validator.validateTaskFile(parsed))) {
             return null;
         }
         

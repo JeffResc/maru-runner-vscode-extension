@@ -4,10 +4,10 @@ A Visual Studio Code extension that automatically detects [Maru Runner](https://
 
 ## Features
 
-- **Automatic Detection**: Automatically finds `tasks.yaml` and `tasks.yml` files in your workspace
+- **Schema-based Detection**: Automatically detects any YAML file that matches the Maru Runner schema
 - **Native Integration**: Converts Maru tasks into VSCode tasks that can be run from the Command Palette or Tasks view
 - **Real-time Updates**: Watches for changes in task files and automatically refreshes the task list
-- **Configurable**: Customize the Maru runner executable path and task file patterns
+- **Configurable**: Customize the Maru runner executable path and schema version
 - **Full Maru Support**: Supports all Maru Runner features including:
   - Variables and environment variables
   - Task composition and includes
@@ -27,10 +27,11 @@ A Visual Studio Code extension that automatically detects [Maru Runner](https://
 ### Automatic Task Detection
 
 Once installed, the extension will automatically:
-1. Search for `tasks.yaml` and `tasks.yml` files in your workspace
-2. Parse the Maru task definitions
-3. Create corresponding VSCode tasks
-4. Make them available in the Command Palette (`Ctrl+Shift+P` → "Tasks: Run Task")
+1. Search for all YAML files in your workspace
+2. Validate each file against the Maru Runner schema
+3. Parse valid Maru task definitions
+4. Create corresponding VSCode tasks
+5. Make them available in the Command Palette (`Ctrl+Shift+P` → "Tasks: Run Task")
 
 ### Running Tasks
 
@@ -42,9 +43,7 @@ You can run Maru tasks in several ways:
 
 ### Task Files
 
-The extension looks for task files with these default names:
-- `tasks.yaml`
-- `tasks.yml`
+The extension automatically detects any YAML file that conforms to the Maru Runner schema. Files can have any name and be located anywhere in your workspace, as long as they contain valid Maru task definitions.
 
 Example task file structure:
 ```yaml
@@ -97,22 +96,27 @@ The extension can be configured through VSCode settings:
 ### `maru-runner.taskFiles`
 - **Type**: `array`
 - **Default**: `["tasks.yaml", "tasks.yml"]`
-- **Description**: Filenames to search for Maru task definitions
+- **Description**: Filenames to search for Maru task definitions (deprecated - now uses schema validation)
+
+### `maru-runner.schemaVersion`
+- **Type**: `string`
+- **Default**: `"main"`
+- **Description**: Git branch or tag to use for the maru-runner schema (e.g., 'main', 'v0.1.0')
 
 Example settings.json:
 ```json
 {
   "maru-runner.executable": "run",
-  "maru-runner.udsCompatible": true,
   "maru-runner.autoDetect": true,
-  "maru-runner.taskFiles": ["tasks.yaml", "tasks.yml", "maru.yaml"]
+  "maru-runner.schemaVersion": "main"
 }
 ```
 
-For UDS users, simply enable the `udsCompatible` option:
+For UDS users, or to use a specific schema version:
 ```json
 {
-  "maru-runner.udsCompatible": true
+  "maru-runner.executable": "uds run",
+  "maru-runner.schemaVersion": "v0.1.0"
 }
 ```
 
@@ -140,6 +144,7 @@ The extension supports all major Maru Runner features:
 - ✅ **Wait Conditions**: Network and cluster wait conditions
 - ✅ **Command Options**: All command properties (mute, dir, env, retries, etc.)
 - ✅ **File Watching**: Automatic refresh when task files change
+- ✅ **Schema Validation**: Validates task files against the official Maru Runner schema
 
 ## Requirements
 

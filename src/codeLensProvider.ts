@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as yaml from 'yaml';
 import { MaruTask } from './types';
+import { SchemaValidator } from './schemaValidator';
 
 export class MaruCodeLensProvider implements vscode.CodeLensProvider {
     private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
@@ -10,12 +11,11 @@ export class MaruCodeLensProvider implements vscode.CodeLensProvider {
         this._onDidChangeCodeLenses.fire();
     }
 
-    public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
+    public async provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
         const fileName = document.fileName.toLowerCase();
-        const isTasksFile = fileName.endsWith('tasks.yaml') || fileName.endsWith('tasks.yml');
-        const isInTasksDir = fileName.includes('/tasks/') && (fileName.endsWith('.yaml') || fileName.endsWith('.yml'));
         
-        if (!isTasksFile && !isInTasksDir) {
+        // Only process YAML files
+        if (!fileName.endsWith('.yaml') && !fileName.endsWith('.yml')) {
             return [];
         }
 
@@ -25,7 +25,9 @@ export class MaruCodeLensProvider implements vscode.CodeLensProvider {
             const content = document.getText();
             const parsed = yaml.parse(content);
             
-            if (!parsed || !parsed.tasks || !Array.isArray(parsed.tasks)) {
+            // Validate against maru-runner schema
+            const validator = SchemaValidator.getInstance();
+            if (!(await validator.validateTaskFile(parsed))) {
                 return [];
             }
 

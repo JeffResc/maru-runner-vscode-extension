@@ -29,7 +29,7 @@ export class MaruTaskProvider implements vscode.TaskProvider {
         }
     }
 
-    private async determineExecutable(): Promise<string> {
+    public async determineExecutable(): Promise<string> {
         if (this.cachedExecutable) {
             return this.cachedExecutable;
         }
@@ -144,10 +144,14 @@ export class MaruTaskProvider implements vscode.TaskProvider {
             cwd: workspaceFolder.uri.fsPath
         });
         
+        // Create task name with filename for clarity
+        const fileName = filePath ? path.basename(filePath) : 'tasks';
+        const taskName = `${maruTask.name} (${fileName})`;
+        
         const task = new vscode.Task(
             taskDefinition,
             workspaceFolder,
-            maruTask.name,
+            taskName,
             'maru',
             execution,
             []
@@ -187,10 +191,14 @@ export class MaruTaskProvider implements vscode.TaskProvider {
             cwd: workspaceFolder?.uri.fsPath
         });
         
+        // Create task name with filename for clarity
+        const fileName = definition.file ? path.basename(definition.file) : 'tasks';
+        const taskName = `${definition.task} (${fileName})`;
+        
         const task = new vscode.Task(
             definition,
             workspaceFolder || vscode.TaskScope.Workspace,
-            definition.task,
+            taskName,
             'maru',
             execution,
             []

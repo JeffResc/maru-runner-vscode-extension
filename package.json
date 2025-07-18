@@ -17,8 +17,8 @@
     "build"
   ],
   "activationEvents": [
-    "workspaceContains:**/tasks.yaml",
-    "workspaceContains:**/tasks.yml"
+    "workspaceContains:**/*.yaml",
+    "workspaceContains:**/*.yml"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -78,6 +78,11 @@
             "tasks.yml"
           ],
           "description": "Filenames to search for Maru task definitions"
+        },
+        "maru-runner.schemaVersion": {
+          "type": "string",
+          "default": "main",
+          "description": "Git branch or tag to use for the maru-runner schema (e.g., 'main', 'v0.1.0')"
         }
       }
     }
