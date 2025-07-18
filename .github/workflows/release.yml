@@ -22,23 +22,17 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Update package.json version
-      run: |
-        VERSION=${GITHUB_REF#refs/tags/}
-        npm version $VERSION --no-git-tag-version
-    
     - name: Install vsce
       run: npm install -g @vscode/vsce
     
+    - name: Login to VSCode Marketplace
+      run: |
+        echo ${{ secrets.PUBLISH_TOKEN }} | vsce login jeffresc --pat
+      
     - name: Package extension
       run: vsce package
-    
-    - name: Upload extension artifact
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./maru-runner-tasks-${{ github.event.release.tag_name }}.vsix
-        asset_name: maru-runner-tasks-${{ github.event.release.tag_name }}.vsix
-        asset_content_type: application/zip
+
+    - name: Publish extension
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        vsce publish $VERSION
