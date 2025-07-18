@@ -30,4 +30,5 @@ jobs:
 
     - name: Publish extension 
       run: |
-        vsce publish ${GITHUB_REF#refs/tags/} -p ${{ secrets.PUBLISH_TOKEN }} 
+        VERSION="${GITHUB_REF#refs/tags/}"
+        vsce publish $VERSION -p ${{ secrets.PUBLISH_TOKEN }}  --no-git-tag-version
