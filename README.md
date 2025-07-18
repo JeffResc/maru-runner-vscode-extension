@@ -9,12 +9,6 @@ A Visual Studio Code extension that automatically detects [Maru Runner](https://
 - **CodeLens Integration**: Adds "Run" buttons directly in YAML files next to each task definition
 - **Real-time Updates**: Watches for changes in task files and automatically refreshes the task list
 - **Configurable**: Customize the Maru runner executable path and schema version
-- **Full Maru Support**: Supports all Maru Runner features including:
-  - Variables and environment variables
-  - Task composition and includes
-  - Command execution with various options
-  - Wait conditions
-  - Task inputs
 
 ## Installation
 
