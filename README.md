@@ -160,6 +160,9 @@ The extension supports all major Maru Runner features:
 4. Test the extension
 5. Submit a pull request
 
+## Employment Disclosure
+Although I am currently employed by [Defense Unicorns](https://defenseunicorns.com/), this project is not affiliated with the company or an officially supported product.
+
 ## License
 
 This extension is released under the MIT License.
